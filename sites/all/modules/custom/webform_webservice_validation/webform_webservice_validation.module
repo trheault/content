@@ -1,0 +1,71 @@
+<?php
+  
+/**
+ * @file
+ * Allows a webform textfield, textarea, email or select to be validated by an external webservice.
+ */
+
+/**
+ * Implementation of hook_webform_validation_validators().
+ */
+function webform_webservice_validation_webform_validation_validators() {
+  return array(
+    'web_service' => array(
+      'name' => "Web Service",
+      'component_types' => array(
+        'textfield',
+        'textarea',
+        'email',
+        'select',
+      ),
+      'custom_error' => TRUE,
+      'custom_data' => array(
+        'label' => t('Web Service to use for validation'),
+        'description' => t('Enter the full URI of the web service to be used. Use <strong>%</strong> (percent sign) in place of the variable to be passed from user input.<br/><strong>Examples: &quot;myservice.php?q=%&quot;, &quot;http://example.com/myservice/%.html&quot;, &quot;http://127.0.0.1/myservice?id=%&cachebuster=1234&quot;</strong><br/><br/><em>Selected service must return valid JSON from a GET request, {"response":"true"} or {"response":"false"}. Form input will be URL encoded. External or internal web services may be used. It is up to the service author to decide how validation occurs (complex logic, uniqueness rules, reuse, and authentication).</em>')
+      ),
+      'description' => t("Validates that user-entered value is either valid (true) or invalid (false) when tested against a simple webservice GET request"),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_webform_validation_validate().
+ */
+function webform_webservice_validation_webform_validation_validate($validator_name, $items, $components, $rule) {
+  if ($items) {
+	  $errors = array();
+    switch ($validator_name) {
+      case 'web_service':
+		
+		foreach ($items as $key => $val) {
+		if ($val) {
+				$webservice_url = $rule['data'];  
+				$url_var = strpos($webservice_url, '%');
+				$url_prefix = substr($webservice_url,0,$url_var);
+				$url_suffix = substr($webservice_url, $url_var + 1, strlen($webservice_url) - $url_var + 1);
+				$url = $url_prefix .urlencode($val) .$url_suffix; 
+				$json = drupal_http_request($url);
+				$jsonresponse = json_decode($json->data,true);
+				if (!$jsonresponse) {
+					$errors[$key] = t('Authorization service is currently unavailable', array('%item' => $components[$key]['name']));
+					watchdog('webform', $errors[$key], array(), WATCHDOG_ERROR);
+					return $errors;
+					break;
+				}
+				// If response is false then return error.
+				if ($jsonresponse["response"] != "true") {
+					$errors[$key] = t('%item ', array('%item' => $components[$key]['name'])) ._webform_validation_i18n_error_message($rule);
+				} else {
+					// Return error to client.
+					if ($jsonresponse["message"]) {
+						drupal_set_message($jsonresponse['message'], "status");
+            watchdog('webform', $jsonresponse['message'], WATCHDOG_ERROR);
+					}
+				}
+			} 
+        }
+        return $errors;
+        break;
+    }
+  }
+}
