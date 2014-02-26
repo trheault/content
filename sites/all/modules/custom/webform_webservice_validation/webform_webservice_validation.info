@@ -1,8 +1,6 @@
 name = Webform Webservice Validation
 description = "Extend Webform validation to validate against a webservice."
 core = 7.x
-version = "7.x-1.x-dev"
-project = webform_webservice_validation
 package = Webform
 dependencies[] = webform
 dependencies[] = webform_validation
