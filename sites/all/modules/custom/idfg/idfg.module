@@ -1,0 +1,164 @@
+<?php
+
+/**
+ * @file
+ * General customizations for IDFG Content.
+ */
+
+/**
+ * Implementation of hook_form_BASE_FORM_ID_alter().
+ * Hides assignment from Create Form.
+ */
+function idfg_form_question_node_form_alter(&$form, $form_state) {  
+  // Load visitor's user object.
+  global $user;	
+  
+  // Set form title and submit button.
+  if (arg(1) == 'add') {
+  	drupal_set_title('Ask Fish & Game a Question');
+    $form['actions']['submit']['#value'] = t('Ask Question');
+    $form['revision_information']['#access'] = false;
+    $form['revision_information']['revision']['#default_value'] = 'Initial question.';
+	} 
+	else {
+		drupal_set_title('Update Question and Answer');
+    $form['actions']['submit']['#value'] = t('Update Question and Answer');
+	}
+  
+  // If authenticated let's make some changes.
+  if ($user->uid) {
+    // If creating a question, pre-fill email.
+    if (arg(1) == 'add') {
+	    $form['field_email']['und'][0]['value']['#default_value'] = $user->mail;
+			// Add a submit handler
+      $form['actions']['submit']['#submit'][] = '_idfg_form_question_submit';	
+    }
+	}
+  
+  // If not a member of IDFG, hide staff entered fields.
+	if (!in_array('idfg', array_values($user->roles))) {
+    // Hide question user assignment.
+    hide($form['field_assigned_user']);
+    // Hide answer (IDFG staff can ask and answer at the same time, FAQ-style).
+    hide($form['field_answer']);	  
+    hide($form['field_answered_on']);
+    hide($form['field_answering_user']);
+    field_group_hide_field_groups($form, array('group_admin'));
+    field_group_hide_field_groups($form, array('group_answer'));
+	}
+  
+  // Add some placeholders.
+  $form['title']['#attributes']['placeholder'] = t('Title your question. Provide more detail below.');
+  $form['body']['und'][0]['#attributes']['placeholder'] = t('Provide as many specifics as you can to help better answer your question. Please omit personal information in this area.');
+}
+
+/**
+ * Implementation of hook_form_BASE_FORM_ID_alter().
+ * Changes page title, button and submits to confirm page.
+ */
+function idfg_form_photo_upload_node_form_alter(&$form, $form_state) {
+	if (arg(1) == 'add') {
+		drupal_set_title('Upload your photo');
+	}
+  $form['actions']['submit']['#submit'][] = '_idfg_form_photo_upload_submit';
+  $form['actions']['submit']['#value'] = t('Share your photo');
+}
+
+/**
+ * Implementation of hook_form_BASE_FORM_ID_alter().
+ * Adds User Autocomplete to Rules Page.
+*/
+function idfg_form_views_form_Questions2_page_2_alter(&$form, $form_state) {
+  if (!empty($form['parameter']['user_name']['settings']['user_name'])) {
+    $form_field = &$form['parameter']['user_name']['settings']['user_name'];
+    $form_field['#type'] = 'textfield';
+    $form_field['#maxlength'] = 60;
+    $form_field['#autocomplete_path'] = 'user/autocomplete'; 
+	  $form_field['#description'] = 'You must enter the username of the staff member in the format <em>idfg-username</em>.  Choices will appear as you type.'; 
+  }
+} 
+
+/**
+ * Implements hook_entity_info_alter().
+ * Adds another view mode for nodes titled RSS Full.
+ */
+function idfg_entity_info_alter(&$entity_info) {
+  $entity_info['node']['view modes']['rss_full'] = array(
+    'label' => t('RSS Full'),
+    'custom settings' => TRUE,
+  );
+}
+
+/**
+ * Implementation of hook_page_alter().
+ * Helper function adds JS for Groups pages.
+ */
+function idfg_page_alter(&$page) {
+	if (substr(request_path(),0,6) == 'group/') {
+		drupal_add_js(drupal_get_path('module', 'idfg') .'/js/group.js', 'file');
+	}
+}
+
+/**
+ * Implementation of hook_nodeapi().
+ * Forces reindex of biblio entry when updated.
+ */
+ function idfg_node_insert($node) {
+  if ($node->type == 'biblio') {
+    search_touch_node($node->nid);
+  }
+}
+
+/*
+ *  Implements hook_node_presave().
+ */
+function idfg_node_presave($node) {
+  if ($node->type == 'question') {
+    $language = $node->language;
+		global $user;
+		
+		// If not a member of IDFG, hide fields.
+	  if (in_array('idfg', array_values($user->roles))) {
+		
+		
+		// See if this was answered before.
+		$original_answer = null;
+		if (isset($node->original)) {
+      if (isset($node->original->field_answer[$language][0])) {
+			  $original_answer = $node->original->field_answer[$language][0]['value'];
+		  }
+    }
+    
+		// Check to see if answered.
+    if (isset($node->field_answer[$language][0])) {
+			  // If answer longer than 2 characters consider answered, else clear out answer.
+			  if (strlen(trim(strip_tags($node->field_answer[$language][0]['value'])))>1) {
+          if ($original_answer == null) {
+   			    $node->field_answering_user[$language][0]['target_id'] = $user->uid;
+    			  $node->field_answered_on[$language][0]['value'] = time();
+					}
+				}
+				else {
+				  // We may want to set to null in this case.
+				  //$node->field_answer = null;
+					//$node->field_answering_user = null;
+					//$node->field_answered_on = null;
+				}
+			}
+		}
+  }
+}
+
+/**
+ * Helper function redirects after photo content type submit.
+ */
+function _idfg_form_question_submit ($form, &$form_state) {
+  $form_state['redirect'] = 'questions/thanks'; 
+}
+
+/**
+ * Helper function redirects after photo content type submit.
+ */
+function _idfg_form_photo_upload_submit ($form, &$form_state) {
+  $form_state['redirect'] = 'photo/uploaded'; 
+}

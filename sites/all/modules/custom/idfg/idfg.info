@@ -1,0 +1,5 @@
+name = "IDFG Customizations"
+description = "Provides a host of customizations and hacks for the idfg site."
+dependencies[] = views
+package = IDFG
+core = 7.x
