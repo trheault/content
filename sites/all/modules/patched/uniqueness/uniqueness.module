@@ -441,10 +441,26 @@ function _uniqueness_content_drupalsearch($values) {
     return array();
   }
 
-  // build search string
+  // Build search string.
   $searchstring = array_key_exists('type', $values) ? ' type:' . $values['type'] . ' ' : '';
-  $searchstring .= join(' OR ', explode(' ', $values['title']));
-  $search_results = node_search_execute($searchstring);
+  $search_words = explode(' ', $values['title']);
+  // Remove words less than 3 characters that won't be indexed by search.
+  foreach ($search_words as $key=>&$value) {
+    if (strlen($value) < 3) {
+      unset($search_words[$key]);
+    }
+  }
+	// Create an array of commonly used words to exclude from search.
+  $common_words = array('and', 'are', 'before', 'but', 'does', 'for', 'from', 'how', 'into', 'like', 'off', 'onto', 'per', 'since', 'than', 'the', 'this', 'that', 'via', 'with', 'what', 'when', 'where', 'with', 'who', 'why', 'you');
+  // Remove common words, make list unique and limit to 7 words to match search limit.
+  $search_words = array_slice(array_unique(array_diff($search_words, $common_words)),0,7);
+	// If empty string don't run search
+  if (empty($search_words[0])) {
+    $search_results = array();;
+  } else {
+    $searchstring .= join(' OR ', $search_words);
+    $search_results = node_search_execute($searchstring);
+  }    
 
   // node_search is automatically limited to max. 10 results, but in case we
   // want even less we need to further reduce the number of results.
@@ -462,7 +478,16 @@ function _uniqueness_content_drupalsearch($values) {
     $item['nid'] = $result['node']->nid;
     $item['title'] = $result['title'];
     if ($nid != $item['nid']) {
-      $related_content["{$result['node']->nid}"] = $item;
+      // Customization to check for release flag if Question content type.
+      if ($values['type'] == 'question') {
+        $flag = flag_get_flag('release');
+        if ($flag->is_flagged($result['node']->nid)) {
+          $related_content["{$result['node']->nid}"] = $item;
+        }
+      }
+      else {
+        $related_content["{$result['node']->nid}"] = $item;
+      }
     }
   }
 
