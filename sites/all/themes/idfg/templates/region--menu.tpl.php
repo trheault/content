@@ -1,0 +1,5 @@
+<div<?php print $attributes; ?>>
+  <div<?php print $content_attributes; ?>>
+    <div id="idfgMenu"><ul id="menu"><li><a class="drop" href="/public/hunt/" title="Hunting">Hunting</a></li><li><a class="drop" href="/public/fish/" title="Fishing">Fishing</a></li><li><a class="drop" href="/public/licenses/" title="Licenses">Licenses</a></li><li><a class="drop" href="/public/wildlife/" title="Wildlife">Wildlife</a></li><li><a class="drop" href="/public/education/" title="Education">Education</a></li><li><a class="drop" href="/public/media/" title="Media">Media</a></li><li><a class="drop" href="/public/science/" title="Science">Science</a></li><li><a class="drop" href="/public/enforce/" title="Enforcement">Enforcement</a></li><li><a class="drop" href="/public/about/" title="About Us">About Us</a></li></ul></div><?php print $content; ?>
+  </div>
+</div>
