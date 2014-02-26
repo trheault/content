@@ -6,5 +6,8 @@ sites/*/dbsettings.inc
 sites/*/files
 sites/*/private
 
+# Ignore windows thumbnails
+Thumbs.db
+
 # Ignore IDE files
-.idea
+.idea/
