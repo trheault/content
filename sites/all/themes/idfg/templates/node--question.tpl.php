@@ -28,7 +28,7 @@
   if ($flag->is_flagged($node->nid)) {
 	  print render($content['field_answer']);
   }	else {
-    if ($content['field_answer']) {
+    if (isset($content['field_answer'])) {
       print '<div class="messages warning"><strong>This answer to this question is under review.</strong>  Once reviewed it may be posted online and the question author will be emailed the answer.  At this time the answer is only visible to IDFG Staff.</div>';
       if (in_array('idfg', array_values($user->roles))) {
        print render($content['field_answer']);
