@@ -77,6 +77,8 @@ function biblio_style_cse($node) {
       $output .= (!empty ($node->biblio_volume))          ? check_plain($node->biblio_volume) : '';
       $output .= (!empty ($node->biblio_issue))           ? '(' . check_plain($node->biblio_issue) . ')' : '';
       $output .= (!empty ($node->biblio_pages))           ? ':' . str_replace(" ", "", check_plain($node->biblio_pages)) . '.' : '';
+      // Added 2/28/2014  https://drupal.org/node/1170322 to display SA Code (call number)
+      $output .= (!empty ($node->biblio_call_number))           ? ' [' . $node->biblio_call_number . ']' : '';  
       break; // generic
   }
   /*  if ($node->biblio_date) $output .= ', '. check_plain($node->biblio_date);
