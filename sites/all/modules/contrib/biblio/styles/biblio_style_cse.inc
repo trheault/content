@@ -78,7 +78,7 @@ function biblio_style_cse($node) {
       $output .= (!empty ($node->biblio_issue))           ? '(' . check_plain($node->biblio_issue) . ')' : '';
       $output .= (!empty ($node->biblio_pages))           ? ':' . str_replace(" ", "", check_plain($node->biblio_pages)) . '.' : '';
       // Added 2/28/2014  https://drupal.org/node/1170322 to display SA Code (call number)
-      $output .= (!empty ($node->biblio_call_number))           ? ' [' . $node->biblio_call_number . ']' : '';  
+      $output .= (!empty ($node->biblio_call_number))           ? ' [<a href="/species/observations/sa/'. $node->biblio_call_number . '" title="View observations">' . $node->biblio_call_number . '</a>]' : '';  
       break; // generic
   }
   /*  if ($node->biblio_date) $output .= ', '. check_plain($node->biblio_date);
